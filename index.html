@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<meta name="referrer" content="no-referrer">
+<title>WAX - חוזר ל-WAX</title>
+<style>
+  body { font-family: Arial, sans-serif; background: #f3f4f6; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; }
+  .box { background: #fff; padding: 28px 32px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,.1); max-width: 420px; text-align: center; color: #374151; }
+  .err { color: #b91c1c; }
+</style>
+</head>
+<body>
+<div class="box"><p id="msg">חוזר ל-WAX...</p></div>
+<script>
+// WAX Google sign-in relay. Google may only send a browser back to a public https address, but WAX lives on the local
+// network (e.g. http://wax-srv:5173). Google sends the browser here; this page sends it straight on to the WAX address
+// the sign-in started from (inside the "state", after the first dot), at /google-callback, with Google's answer.
+// Nothing is stored or sent anywhere else. The code is useless without the WAX server's secret and PKCE verifier.
+(function () {
+  var msg = document.getElementById('msg');
+  function fail(text) { msg.textContent = text; msg.className = 'err'; }
+  var query = window.location.search;
+  var state = new URLSearchParams(query).get('state') || '';
+  var dot = state.indexOf('.');
+  if (dot < 0) return fail('הקישור לא תקין. חזור ל-WAX ונסה להתחבר שוב.');
+  var base;
+  try {
+    var b64 = state.slice(dot + 1).replace(/-/g, '+').replace(/_/g, '/');
+    while (b64.length % 4) b64 += '=';
+    base = atob(b64);
+  } catch (e) {
+    return fail('הקישור לא תקין. חזור ל-WAX ונסה להתחבר שוב.');
+  }
+  // Only addresses on a local network (never the internet): a name without dots, localhost, a private IP, or a local domain
+  var local = /^https?:\/\/([a-z0-9-]+|localhost|127\.\d+\.\d+\.\d+|10\.\d+\.\d+\.\d+|192\.168\.\d+\.\d+|172\.(1[6-9]|2\d|3[01])\.\d+\.\d+|[a-z0-9.-]+\.(local|lan|home|internal|corp|intranet))(:\d{1,5})?$/i;
+  if (!local.test(base)) return fail('כתובת WAX לא מוכרת. חזור ל-WAX ונסה להתחבר שוב.');
+  window.location.replace(base + '/google-callback' + query);
+})();
+</script>
+<noscript><p>יש לאפשר JavaScript כדי לחזור ל-WAX.</p></noscript>
+</body>
+</html>
